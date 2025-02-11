@@ -1,0 +1,131 @@
+definitions:
+  main.BuyOrder:
+    properties:
+      amount:
+        type: number
+      id:
+        type: string
+      order_type:
+        description: Limitada ou Mercado
+        type: string
+      stock:
+        type: string
+      user_id:
+        type: string
+    type: object
+  main.Credentials:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  main.User:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /buy:
+    post:
+      consumes:
+      - application/json
+      description: Permite ao usuário comprar ações, com validações de saldo e tipo
+        de ordem
+      parameters:
+      - description: Compra de ações
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/main.BuyOrder'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Compra de ações
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica o usuário e retorna o token JWT
+      parameters:
+      - description: Credenciais do usuário
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/main.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token JWT
+          schema:
+            type: string
+        "400":
+          description: Error
+          schema:
+            type: string
+      summary: Realiza o login e retorna o token JWT
+  /order-status/{id}:
+    get:
+      description: Permite ao usuário consultar o status de uma ordem pelo ID
+      parameters:
+      - description: ID da ordem
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - bearer: []
+      summary: Consultar o status da ordem
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo usuário no sistema
+      parameters:
+      - description: Dados do usuário
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/main.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User registered
+          schema:
+            type: string
+        "400":
+          description: Error
+          schema:
+            type: string
+      summary: Cadastrar um novo usuário
+swagger: "2.0"
