@@ -4,7 +4,7 @@ Este projeto é uma API para comprar ações. Ele utiliza Go, Gorilla Mux para r
 
 ## Pré-requisitos
 
-- Go 1.16 ou superior
+- Go 1.21.6
 - Git
 
 ## Instalação
