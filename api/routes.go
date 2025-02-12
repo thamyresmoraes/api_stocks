@@ -17,7 +17,10 @@ func SetupRoutes() {
 	r.HandleFunc("/login", Login).Methods("POST")
 	r.HandleFunc("/users", GetUsers).Methods("GET")
 	r.HandleFunc("/buy", BuyStock).Methods("POST")
-	r.HandleFunc("/order-status", ConsultaStatusOrdem).Methods("GET") // Adicionando nova rota
+	r.HandleFunc("/order-status", ConsultaStatusOrdem).Methods("GET")
+	r.HandleFunc("/orders", GetOrders).Methods("GET")
+	r.HandleFunc("/market-stocks", GetMarketStocks).Methods("GET")
+	r.HandleFunc("/balance", GetBalance).Methods("GET")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 

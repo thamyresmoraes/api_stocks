@@ -4,6 +4,44 @@
         "contact": {}
     },
     "paths": {
+        "/balance": {
+            "get": {
+                "description": "Obtém o saldo disponível do usuário autenticado",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retorna o saldo do usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token JWT",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saldo do usuário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/buy": {
             "post": {
                 "description": "Permite ao usuário comprar ações, com validações de saldo e tipo de ordem",
@@ -137,6 +175,29 @@
                         "description": "Could not create token",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-stocks": {
+            "get": {
+                "description": "Obtém uma lista de ações do mercado americano com seus preços de mercado",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retorna a lista de ativos do mercado americano e seus preços",
+                "responses": {
+                    "200": {
+                        "description": "Lista de ações e preços",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.MarketStock"
+                            }
                         }
                     }
                 }
@@ -316,6 +377,20 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.MarketStock": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "symbol": {
                     "type": "string"
                 }
             }

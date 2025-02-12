@@ -19,6 +19,15 @@ definitions:
       username:
         type: string
     type: object
+  api.MarketStock:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+      symbol:
+        type: string
+    type: object
   api.TokenClaims:
     properties:
       admin:
@@ -42,6 +51,31 @@ definitions:
 info:
   contact: {}
 paths:
+  /balance:
+    get:
+      consumes:
+      - application/json
+      description: Obtém o saldo disponível do usuário autenticado
+      parameters:
+      - description: Token JWT
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Saldo do usuário
+          schema:
+            additionalProperties:
+              type: number
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Retorna o saldo do usuário
   /buy:
     post:
       consumes:
@@ -134,6 +168,22 @@ paths:
           schema:
             type: string
       summary: Realiza login do usuário
+  /market-stocks:
+    get:
+      consumes:
+      - application/json
+      description: Obtém uma lista de ações do mercado americano com seus preços de
+        mercado
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de ações e preços
+          schema:
+            items:
+              $ref: '#/definitions/api.MarketStock'
+            type: array
+      summary: Retorna a lista de ativos do mercado americano e seus preços
   /order-status/{order_id}:
     get:
       consumes:

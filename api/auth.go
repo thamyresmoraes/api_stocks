@@ -80,6 +80,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	Users[user.Username] = string(hashedPassword)
 	UserRoles[user.Username] = user.Admin
 
+	// 🔹 Adicionando saldo inicial ao usuário
+	balance[user.Username] = 100000.0 // Pode ajustar o saldo inicial como preferir
+
+	fmt.Println("✅ User registered:", user.Username, "Balance:", balance[user.Username])
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode("User registered")
 }

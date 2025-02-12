@@ -67,72 +67,68 @@ var orderStatus = make(map[string]string)
 // @Failure 400 {string} string "Insufficient funds"
 // @Router /buy [post]
 func BuyStock(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("🔹 Received BuyStock request")
 
 	claims, err := validateToken(r)
 	if err != nil {
+		fmt.Println("❌ Unauthorized: Invalid Token")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Definindo o cabeçalho para permitir JSON
 	w.Header().Set("Content-Type", "application/json")
 
-	// Decodificando a requisição JSON
 	var order BuyOrder
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+		fmt.Println("❌ Invalid JSON request")
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	// Gera um ID único para a ordem
 	order.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	order.UserID = claims.Username // Associa a ordem ao usuário autenticado
+	order.UserID = claims.Username
 
-	// Verifica se o mercado está aberto
+	fmt.Println("🔹 Order Details:", order)
+
 	if !marketOpen {
+		fmt.Println("❌ Market is closed")
 		http.Error(w, "Market is closed", http.StatusBadRequest)
 		return
 	}
 
-	// Verifica se o usuário tem saldo suficiente
 	userBalance, exists := balance[order.UserID]
 	if !exists {
+		fmt.Println("❌ User not found:", order.UserID)
 		http.Error(w, "User not found", http.StatusBadRequest)
 		return
 	}
 
 	if userBalance < order.Amount {
+		fmt.Println("❌ Insufficient funds:", userBalance, "needed:", order.Amount)
 		http.Error(w, "Insufficient funds", http.StatusBadRequest)
 		return
 	}
 
-	// Verifica se a compra é duplicada (mesmo valor e tipo de ação)
 	orderKey := fmt.Sprintf("%s-%s-%s", order.UserID, order.Stock, order.OrderType)
 	if _, exists := previousOrders[orderKey]; exists {
+		fmt.Println("❌ Duplicate purchase request for:", orderKey)
 		http.Error(w, "Duplicate purchase request", http.StatusBadRequest)
 		return
 	}
 
-	// Processa a compra
 	balance[order.UserID] -= order.Amount
 	previousOrders[orderKey] = order
 	orderStatus[order.ID] = "Order sent"
 
-	// Responde com sucesso
-	var message string
-	if order.OrderType == "limit" {
-		message = "Order placed successfully (Limit Order)"
-	} else {
-		message = fmt.Sprintf("Successfully purchased %s for $%.2f", order.Stock, order.Amount)
-	}
-
-	// Responde com o ID da ordem e a mensagem
-	w.WriteHeader(http.StatusOK)
+	message := fmt.Sprintf("Successfully purchased %s for $%.2f", order.Stock, order.Amount)
 	response := map[string]interface{}{
 		"message":  message,
 		"order_id": order.ID,
 		"balance":  balance[order.UserID],
 	}
+
+	fmt.Println("✅ Order successful:", response)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -160,4 +156,86 @@ func ConsultaStatusOrdem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"order_id": orderID, "status": status})
+}
+
+// MarketStock representa um ativo e seu preço atual
+type MarketStock struct {
+	Symbol string  `json:"symbol"`
+	Name   string  `json:"name"`
+	Price  float64 `json:"price"`
+}
+
+// Lista simulada de ações do mercado americano
+var marketStocks = []MarketStock{
+	{"AAPL", "Apple Inc.", 175.50},
+	{"MSFT", "Microsoft Corporation", 320.75},
+	{"GOOGL", "Alphabet Inc.", 140.30},
+	{"AMZN", "Amazon.com Inc.", 135.20},
+	{"TSLA", "Tesla Inc.", 215.90},
+	{"NVDA", "NVIDIA Corporation", 470.65},
+}
+
+// GetMarketStocks retorna uma lista de ações do mercado americano e seus preços
+// @Summary Retorna a lista de ativos do mercado americano e seus preços
+// @Description Obtém uma lista de ações do mercado americano com seus preços de mercado
+// @Accept json
+// @Produce json
+// @Success 200 {array} MarketStock "Lista de ações e preços"
+// @Router /market-stocks [get]
+func GetMarketStocks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(marketStocks)
+}
+
+// GetBalance retorna o saldo do usuário autenticado
+// @Summary Retorna o saldo do usuário
+// @Description Obtém o saldo disponível do usuário autenticado
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Token JWT"
+// @Success 200 {object} map[string]float64 "Saldo do usuário"
+// @Failure 401 {string} string "Unauthorized"
+// @Router /balance [get]
+func GetBalance(w http.ResponseWriter, r *http.Request) {
+	claims, err := validateToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userBalance, exists := balance[claims.Username]
+	if !exists {
+		http.Error(w, "User not found", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("💰 Consulta de saldo:", claims.Username, "| Saldo atual:", userBalance)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]float64{"balance": userBalance})
+}
+
+// GetOrders retorna todas as ordens do usuário autenticado
+// @Summary Lista todas as ordens do usuário
+// @Description Retorna todas as ordens feitas pelo usuário autenticado
+// @Produce json
+// @Success 200 {array} BuyOrder "Lista de ordens"
+// @Failure 401 {string} string "Unauthorized"
+// @Router /orders [get]
+func GetOrders(w http.ResponseWriter, r *http.Request) {
+	claims, err := validateToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userOrders := []BuyOrder{}
+	for _, order := range previousOrders {
+		if order.UserID == claims.Username {
+			userOrders = append(userOrders, order)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(userOrders)
 }
