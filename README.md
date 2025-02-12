@@ -1,3 +1,4 @@
+[![Go CI](https://github.com/thamyresmoraes/api_stocks/actions/workflows/go.yml/badge.svg)](https://github.com/thamyresmoraes/api_stocks/actions/workflows/go.yml)
 ![Coverage](coverage.svg)
 
 # Stock API
