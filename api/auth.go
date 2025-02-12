@@ -102,26 +102,31 @@ func Register(w http.ResponseWriter, r *http.Request) {
 // @Router /login [post]
 func Login(w http.ResponseWriter, r *http.Request) {
 	var creds Credentials
+	w.Header().Set("Content-Type", "application/json") // 🔹 Garante que o retorno seja JSON
+
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid input"})
 		return
 	}
 
 	storedPassword, exists := Users[creds.Username]
 	if !exists {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid credentials"})
 		return
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(creds.Password))
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid credentials"})
 		return
 	}
 
 	isAdmin := UserRoles[creds.Username]
-
 	expirationTime := time.Now().Add(24 * time.Hour)
+
 	claims := &Claims{
 		Username: creds.Username,
 		Admin:    isAdmin,
@@ -129,16 +134,28 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt: expirationTime.Unix(),
 		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		http.Error(w, "Could not create token", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Could not create token"})
 		return
 	}
 
+	// 🔹 Pegando o saldo do usuário
+	userBalance := balance[creds.Username]
+
+	// 🔹 Retornando mais informações no JSON
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"token":   tokenString,
+		"username": creds.Username,
+		"balance": userBalance,
+		"isAdmin": isAdmin,
+	})
 }
+
 
 // GenerateJWT gera um token JWT válido para um usuário
 // @Summary Gera um token JWT para um usuário
