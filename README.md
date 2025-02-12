@@ -1,3 +1,5 @@
+![Coverage](coverage.svg)
+
 # Stock API
 
 Este projeto é uma API para comprar ações. Ele utiliza Go, Gorilla Mux para roteamento e Swagger para documentação da API.

@@ -33,12 +33,12 @@ jobs:
       - name: Exibir cobertura de código no log
         run: go tool cover -func=coverage.out
 
-      - name: Gerar relatório de cobertura HTML
-        run: go tool cover -html=coverage.out -o coverage.html
+      - name: Gerar badge de cobertura
+        run: bash coverage_badge.sh
 
-      - name: Report
-        uses: actions/upload-artifact@v4
+      - name: Commitar e Atualizar Badge
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: coverage-report
-          path: coverage.html
-          retention-days: 5
+          commit_message: "Atualizar badge de cobertura"
+          branch: main
+          file_pattern: coverage.svg
