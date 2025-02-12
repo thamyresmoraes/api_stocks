@@ -24,31 +24,78 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Compra de ações",
+                "summary": "Compra ações",
                 "parameters": [
                     {
-                        "description": "Compra de ações",
+                        "description": "Dados da ordem de compra",
                         "name": "order",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.BuyOrder"
+                            "$ref": "#/definitions/api.BuyOrder"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Detalhes da compra",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Insufficient funds",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Market is closed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/generate-token": {
+            "get": {
+                "description": "Retorna um token JWT válido para um usuário específico",
+                "summary": "Gera um token JWT para um usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Nome do usuário",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Indica se o usuário é admin",
+                        "name": "isAdmin",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token JWT gerado",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro ao gerar token",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -56,14 +103,14 @@ const docTemplate = `{
         },
         "/login": {
             "post": {
-                "description": "Autentica o usuário e retorna o token JWT",
+                "description": "Autentica um usuário e retorna um token JWT",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Realiza o login e retorna o token JWT",
+                "summary": "Realiza login do usuário",
                 "parameters": [
                     {
                         "description": "Credenciais do usuário",
@@ -71,7 +118,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.Credentials"
+                            "$ref": "#/definitions/api.Credentials"
                         }
                     }
                 ],
@@ -79,11 +126,26 @@ const docTemplate = `{
                     "200": {
                         "description": "Token JWT",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Error",
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Could not create token",
                         "schema": {
                             "type": "string"
                         }
@@ -91,37 +153,39 @@ const docTemplate = `{
                 }
             }
         },
-        "/order-status/{id}": {
+        "/order-status/{order_id}": {
             "get": {
-                "security": [
-                    {
-                        "bearer": []
-                    }
+                "description": "Retorna o status atual de uma ordem de compra pelo ID da ordem",
+                "consumes": [
+                    "application/json"
                 ],
-                "description": "Permite ao usuário consultar o status de uma ordem pelo ID",
-                "summary": "Consultar o status da ordem",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Consulta o status de uma ordem",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "ID da ordem",
-                        "name": "id",
+                        "name": "order_id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Status da ordem",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "400": {
+                        "description": "Ordem não encontrada",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "string"
                         }
                     }
                 }
@@ -129,14 +193,14 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
-                "description": "Cria um novo usuário no sistema",
+                "description": "Registra um novo usuário na plataforma",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Cadastrar um novo usuário",
+                "summary": "Cria um novo usuário",
                 "parameters": [
                     {
                         "description": "Dados do usuário",
@@ -144,7 +208,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.User"
+                            "$ref": "#/definitions/api.User"
                         }
                     }
                 ],
@@ -156,7 +220,77 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Error",
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Could not hash password",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "description": "Retorna a lista de usuários cadastrados com suas senhas (apenas administradores podem acessar)",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lista usuários cadastrados",
+                "responses": {
+                    "200": {
+                        "description": "Lista de usuários cadastrados",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: Only admins can access this endpoint",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/validate-token": {
+            "get": {
+                "description": "Verifica se um token JWT é válido",
+                "summary": "Valida um token JWT",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token JWT",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Claims do token",
+                        "schema": {
+                            "$ref": "#/definitions/api.TokenClaims"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "string"
                         }
@@ -166,7 +300,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.BuyOrder": {
+        "api.BuyOrder": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -176,7 +310,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "order_type": {
-                    "description": "Limitada ou Mercado",
                     "type": "string"
                 },
                 "stock": {
@@ -187,7 +320,7 @@ const docTemplate = `{
                 }
             }
         },
-        "main.Credentials": {
+        "api.Credentials": {
             "type": "object",
             "properties": {
                 "password": {
@@ -198,9 +331,28 @@ const docTemplate = `{
                 }
             }
         },
-        "main.User": {
+        "api.TokenClaims": {
             "type": "object",
             "properties": {
+                "admin": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "exp": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "test_user"
+                }
+            }
+        },
+        "api.User": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "type": "boolean"
+                },
                 "password": {
                     "type": "string"
                 },

@@ -9,13 +9,15 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-// Configura as rotas
-func SetupRoutes() { // Nome da função deve ser maiúsculo para ser exportado
+// SetupRoutes configura as rotas da API
+func SetupRoutes() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/register", Register).Methods("POST")
 	r.HandleFunc("/login", Login).Methods("POST")
 	r.HandleFunc("/users", GetUsers).Methods("GET")
+	r.HandleFunc("/buy", BuyStock).Methods("POST")
+	r.HandleFunc("/order-status", ConsultaStatusOrdem).Methods("GET") // Adicionando nova rota
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 

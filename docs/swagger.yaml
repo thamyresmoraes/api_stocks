@@ -1,27 +1,39 @@
 definitions:
-  main.BuyOrder:
+  api.BuyOrder:
     properties:
       amount:
         type: number
       id:
         type: string
       order_type:
-        description: Limitada ou Mercado
         type: string
       stock:
         type: string
       user_id:
         type: string
     type: object
-  main.Credentials:
+  api.Credentials:
     properties:
       password:
         type: string
       username:
         type: string
     type: object
-  main.User:
+  api.TokenClaims:
     properties:
+      admin:
+        example: true
+        type: boolean
+      exp:
+        type: integer
+      username:
+        example: test_user
+        type: string
+    type: object
+  api.User:
+    properties:
+      admin:
+        type: boolean
       password:
         type: string
       username:
@@ -37,85 +49,128 @@ paths:
       description: Permite ao usuário comprar ações, com validações de saldo e tipo
         de ordem
       parameters:
-      - description: Compra de ações
+      - description: Dados da ordem de compra
         in: body
         name: order
         required: true
         schema:
-          $ref: '#/definitions/main.BuyOrder'
+          $ref: '#/definitions/api.BuyOrder'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Detalhes da compra
           schema:
             additionalProperties: true
             type: object
         "400":
-          description: Bad Request
+          description: Insufficient funds
           schema:
-            additionalProperties: true
-            type: object
-      summary: Compra de ações
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: Market is closed
+          schema:
+            type: string
+      summary: Compra ações
+  /generate-token:
+    get:
+      description: Retorna um token JWT válido para um usuário específico
+      parameters:
+      - description: Nome do usuário
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: Indica se o usuário é admin
+        in: query
+        name: isAdmin
+        required: true
+        type: boolean
+      responses:
+        "200":
+          description: Token JWT gerado
+          schema:
+            type: string
+        "500":
+          description: Erro ao gerar token
+          schema:
+            type: string
+      summary: Gera um token JWT para um usuário
   /login:
     post:
       consumes:
       - application/json
-      description: Autentica o usuário e retorna o token JWT
+      description: Autentica um usuário e retorna um token JWT
       parameters:
       - description: Credenciais do usuário
         in: body
         name: credentials
         required: true
         schema:
-          $ref: '#/definitions/main.Credentials'
+          $ref: '#/definitions/api.Credentials'
       produces:
       - application/json
       responses:
         "200":
           description: Token JWT
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "400":
-          description: Error
+          description: Invalid input
           schema:
             type: string
-      summary: Realiza o login e retorna o token JWT
-  /order-status/{id}:
+        "401":
+          description: Invalid credentials
+          schema:
+            type: string
+        "500":
+          description: Could not create token
+          schema:
+            type: string
+      summary: Realiza login do usuário
+  /order-status/{order_id}:
     get:
-      description: Permite ao usuário consultar o status de uma ordem pelo ID
+      consumes:
+      - application/json
+      description: Retorna o status atual de uma ordem de compra pelo ID da ordem
       parameters:
       - description: ID da ordem
         in: path
-        name: id
+        name: order_id
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
+          description: Status da ordem
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
-        "404":
-          description: Not Found
+        "400":
+          description: Ordem não encontrada
           schema:
-            additionalProperties: true
-            type: object
-      security:
-      - bearer: []
-      summary: Consultar o status da ordem
+            type: string
+      summary: Consulta o status de uma ordem
   /register:
     post:
       consumes:
       - application/json
-      description: Cria um novo usuário no sistema
+      description: Registra um novo usuário na plataforma
       parameters:
       - description: Dados do usuário
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/main.User'
+          $ref: '#/definitions/api.User'
       produces:
       - application/json
       responses:
@@ -124,8 +179,55 @@ paths:
           schema:
             type: string
         "400":
-          description: Error
+          description: Invalid input
           schema:
             type: string
-      summary: Cadastrar um novo usuário
+        "500":
+          description: Could not hash password
+          schema:
+            type: string
+      summary: Cria um novo usuário
+  /users:
+    get:
+      description: Retorna a lista de usuários cadastrados com suas senhas (apenas
+        administradores podem acessar)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de usuários cadastrados
+          schema:
+            items:
+              additionalProperties:
+                type: string
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "403":
+          description: 'Forbidden: Only admins can access this endpoint'
+          schema:
+            type: string
+      summary: Lista usuários cadastrados
+  /validate-token:
+    get:
+      description: Verifica se um token JWT é válido
+      parameters:
+      - description: Token JWT
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Claims do token
+          schema:
+            $ref: '#/definitions/api.TokenClaims'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      summary: Valida um token JWT
 swagger: "2.0"
